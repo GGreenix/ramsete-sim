@@ -4,36 +4,24 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.RamseteController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.XboxController.Button;
-import frc.robot.subsystems.DriveSubsystem;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RamseteCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SelectCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import java.util.List;
-import java.util.function.Supplier;
-
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPoint;
-import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 import com.pathplanner.lib.commands.PPRamseteCommand;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.RamseteController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SelectCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.subsystems.DriveSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -42,11 +30,7 @@ import com.pathplanner.lib.commands.PPRamseteCommand;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  private static final double KS = 0;
-
-private static final double KV = 0;
-
-private static final double KA = 0;
+  
 
 // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
@@ -56,7 +40,6 @@ private static final double KA = 0;
       new XboxController(Constants.OIConstants.kDriverControllerPort);
       JoystickButton _b1 = new JoystickButton(m_driverController,1);
 
-    private PathPlannerTrajectory traj1 =  getTrajToCenter();
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
       
@@ -83,7 +66,7 @@ private static final double KA = 0;
    */
  
   public void configureButtonBindings() {
-    _b1.whenPressed(new SelectCommand(this::followTrajectoryCommand));
+    _b1.whileActiveOnce(new SelectCommand(this::followTrajectoryCommand));
   }
   
   public DriveSubsystem getRobotDrive() {
@@ -107,7 +90,7 @@ private static final double KA = 0;
   }
   public Command followTrajectoryCommand()
 {
-  System.out.println("recomfigured");
+  System.out.println("scheduled");
 
     return new SequentialCommandGroup(new InstantCommand(() -> {
         
@@ -129,77 +112,5 @@ private static final double KA = 0;
             m_robotDrive // Requires this drive subsystem
         ));
 }
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
-  public Command getAutonomousCommand() {
-      // This will load the file "Example Path.path" and generate it with a max velocity of 4 m/s and a max acceleration of 3 m/s^2
-PathPlannerTrajectory examplePath = PathPlanner.loadPath("New New New Path", new PathConstraints(4, 3));
-
-// This trajectory can then be passed to a path follower such as a PPSwerveControllerCommand
-// Or the path can be sampled at a given point in time for custom path following
-
-// Sample the state of the path at 1.2 seconds
-PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
-
-// Print the velocity at the sampled time
-System.out.println(exampleState.velocityMetersPerSecond);
-    // Create a voltage constraint to ensure we don't accelerate too fast
-    var autoVoltageConstraint =
-        new DifferentialDriveVoltageConstraint(
-            new SimpleMotorFeedforward(
-                Constants.DriveConstants.ksVolts,
-                Constants.DriveConstants.kvVoltSecondsPerMeter,
-                Constants.DriveConstants.kaVoltSecondsSquaredPerMeter),
-            Constants.DriveConstants.kDriveKinematics,
-            1);
-
-    // Create config for trajectory
-    TrajectoryConfig config =
-        new TrajectoryConfig(
-                Constants.AutoConstants.kMaxSpeedMetersPerSecond,
-                Constants.AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-            // Add kinematics to ensure max speed is actually obeyed
-            .setKinematics(Constants.DriveConstants.kDriveKinematics)
-            // Apply the voltage constraint
-            .addConstraint(autoVoltageConstraint);
-
-    // An example trajectory to follow.  All units in meters.
-    Trajectory exampleTrajectory =
-        TrajectoryGenerator.generateTrajectory(
-            // Start at (1, 2) facing the +X direction
-            new Pose2d(3, 4, new Rotation2d(0)),
-            // Pass through these two interior waypoints, making an 's' curve path
-            List.of(new Translation2d(1, 3), new Translation2d(0, 1)),
-            // End 3 meters straight ahead of where we started, facing forward
-            new Pose2d(10, 2, new Rotation2d(0)),
-            // Pass config
-            config);
-
-    RamseteCommand ramseteCommand =
-        new RamseteCommand(
-            exampleTrajectory,
-            m_robotDrive::getPose,
-            new RamseteController(
-                Constants.AutoConstants.kRamseteB, Constants.AutoConstants.kRamseteZeta),
-            new SimpleMotorFeedforward(
-                Constants.DriveConstants.ksVolts,
-                Constants.DriveConstants.kvVoltSecondsPerMeter,
-                Constants.DriveConstants.kaVoltSecondsSquaredPerMeter),
-            Constants.DriveConstants.kDriveKinematics,
-            m_robotDrive::getWheelSpeeds,
-            new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
-            new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
-            // RamseteCommand passes volts to the callback
-            m_robotDrive::tankDriveVolts,
-            m_robotDrive);
-
-    // Reset odometry to starting pose of trajectory.
-    m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
-
-    // Run path following command, then stop at the end.
-    return ramseteCommand.andThen(() -> m_robotDrive.tankDriveVolts(0, 0));
-  }
+ 
 }
