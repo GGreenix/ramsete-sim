@@ -15,6 +15,8 @@ import edu.wpi.first.math.controller.RamseteController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim.KitbotGearing;
+import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim.KitbotMotor;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -42,7 +44,6 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-      
     // Configure the button bindings
     configureButtonBindings();
 
@@ -66,7 +67,7 @@ public class RobotContainer {
    */
  
   public void configureButtonBindings() {
-    _b1.whileActiveOnce(new SelectCommand(this::followTrajectoryCommand));
+    _b1.whenPressed(new SelectCommand(this::followTrajectoryCommand));
   }
   
   public DriveSubsystem getRobotDrive() {
@@ -82,7 +83,7 @@ public class RobotContainer {
     // System.out.println(m_robotDrive.getPose());
     
     return PathPlanner.generatePath(
-        new PathConstraints(3,1), 
+        new PathConstraints(10,3), 
         new PathPoint(new Translation2d(m_robotDrive.getPose().getX(), m_robotDrive.getPose().getY()), m_robotDrive.getPose().getRotation()), // position, heading
         new PathPoint(new Translation2d(8.0,4.0), m_robotDrive.getPose().getRotation()) // position, heading
         
@@ -90,11 +91,11 @@ public class RobotContainer {
   }
   public Command followTrajectoryCommand()
 {
-  System.out.println("scheduled");
+  
 
     return new SequentialCommandGroup(new InstantCommand(() -> {
         
-        System.out.println("");
+      System.out.println("scheduled");
       })
        ,new PPRamseteCommand(
         getTrajToCenter(), 
